@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# Co-Study
+frontend/node_modules/
+frontend/dist/
+.idea/
+.vscode/
+backend/study.db
+backend/test_study.db
