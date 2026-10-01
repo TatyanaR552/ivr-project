@@ -54,3 +54,28 @@ def test_second_user_can_join_room_by_code(client):
     assert joined.status_code == 200
     assert joined.json()["id"] == room["id"]
 
+
+def test_member_can_leave_and_only_owner_can_delete_room(client):
+    register(client)
+    owner_headers = {"Authorization": f"Bearer {login(client)}"}
+    room = client.post(
+        "/rooms",
+        json={"name": "Комната", "is_public": True},
+        headers=owner_headers,
+    ).json()
+
+    register(client, username="second", email="second@example.com")
+    member_headers = {"Authorization": f"Bearer {login(client, 'second')}"}
+    assert client.post(
+        "/rooms/join",
+        json={"invite_code": room["invite_code"]},
+        headers=member_headers,
+    ).status_code == 200
+
+    assert client.delete(f"/rooms/{room['id']}", headers=member_headers).status_code == 403
+    assert client.post(f"/rooms/{room['id']}/leave", headers=owner_headers).status_code == 403
+    assert client.post(f"/rooms/{room['id']}/leave", headers=member_headers).status_code == 200
+    assert client.get(f"/rooms/{room['id']}", headers=member_headers).status_code == 403
+    assert client.delete(f"/rooms/{room['id']}", headers=owner_headers).status_code == 200
+    assert client.get(f"/rooms/{room['id']}", headers=owner_headers).status_code == 404
+

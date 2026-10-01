@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom"
 
 import { isAuthenticated } from "./api.js"
 import Login from "./pages/Login.jsx"
+import Help from "./pages/Help.jsx"
 import Profile from "./pages/Profile.jsx"
 import Register from "./pages/Register.jsx"
 import Room from "./pages/Room.jsx"
@@ -18,6 +19,7 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<PrivateRoute><RoomList /></PrivateRoute>} />
       <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+      <Route path="/help" element={<PrivateRoute><Help /></PrivateRoute>} />
       <Route path="/rooms/:roomId" element={<PrivateRoute><Room /></PrivateRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

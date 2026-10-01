@@ -62,6 +62,43 @@ def join_room(
     return room
 
 
+@router.post("/{room_id}/leave")
+def leave_room(
+    room_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    room = db.query(models.Room).filter(models.Room.id == room_id).first()
+    if room is None:
+        raise HTTPException(status_code=404, detail="Комната не найдена")
+    if current_user not in room.members:
+        raise HTTPException(status_code=403, detail="Вы не участник этой комнаты")
+    if room.owner_id == current_user.id:
+        raise HTTPException(status_code=403, detail="Владелец не может выйти из комнаты. Её можно удалить")
+
+    room.members.remove(current_user)
+    db.commit()
+    return {"ok": True}
+
+
+@router.delete("/{room_id}")
+def delete_room(
+    room_id: str,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    room = db.query(models.Room).filter(models.Room.id == room_id).first()
+    if room is None:
+        raise HTTPException(status_code=404, detail="Комната не найдена")
+    if room.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Удалить комнату может только владелец")
+
+    room.members.clear()
+    db.delete(room)
+    db.commit()
+    return {"ok": True}
+
+
 @router.get("/{room_id}", response_model=schemas.RoomOut)
 def get_room(
     room_id: str,

@@ -5,7 +5,8 @@ function getToken() {
 }
 
 async function apiFetch(path, options = {}) {
-  const token = getToken()
+  const isPublicAuth = path === "/auth/login" || path === "/auth/register"
+  const token = isPublicAuth ? null : getToken()
   const isForm = options.body instanceof URLSearchParams
   const headers = {
     ...(!isForm && options.body ? { "Content-Type": "application/json" } : {}),
@@ -13,8 +14,17 @@ async function apiFetch(path, options = {}) {
     ...options.headers,
   }
 
-  const response = await fetch(`${API_BASE}${path}`, { ...options, headers })
+  let response
+  try {
+    response = await fetch(`${API_BASE}${path}`, { ...options, headers })
+  } catch {
+    throw new Error("Не удалось связаться с сервером.")
+  }
   if (!response.ok) {
+    if (response.status === 401 && token && getToken()) {
+      clearToken()
+      window.location.replace("/login?session=expired")
+    }
     const body = await response.json().catch(() => ({}))
     const detail = Array.isArray(body.detail)
       ? body.detail.map((item) => item.msg).join(". ")
@@ -47,6 +57,8 @@ export const api = {
     body: JSON.stringify({ invite_code: inviteCode }),
   }),
   getRoom: (roomId) => apiFetch(`/rooms/${roomId}`),
+  leaveRoom: (roomId) => apiFetch(`/rooms/${roomId}/leave`, { method: "POST" }),
+  deleteRoom: (roomId) => apiFetch(`/rooms/${roomId}`, { method: "DELETE" }),
 }
 
 export function saveToken(token) {
