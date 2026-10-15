@@ -1,7 +1,13 @@
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"
 
-function getToken() {
+export function getToken() {
   return localStorage.getItem("token")
+}
+
+export function getRoomSocketUrl(roomId) {
+  const url = new URL(`${API_BASE}/ws/rooms/${roomId}`, window.location.origin)
+  url.protocol = url.protocol === "https:" ? "wss:" : "ws:"
+  return url.href
 }
 
 async function apiFetch(path, options = {}) {
@@ -15,10 +21,17 @@ async function apiFetch(path, options = {}) {
   }
 
   let response
-  try {
-    response = await fetch(`${API_BASE}${path}`, { ...options, headers })
-  } catch {
-    throw new Error("Не удалось связаться с сервером.")
+  const attempts = !options.method || options.method === "GET" ? 3 : 1
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      response = await fetch(`${API_BASE}${path}`, { ...options, headers })
+      break
+    } catch {
+      if (attempt === attempts - 1) {
+        throw new Error("Не удалось связаться с сервером.")
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)))
+    }
   }
   if (!response.ok) {
     if (response.status === 401 && token && getToken()) {
@@ -59,6 +72,16 @@ export const api = {
   getRoom: (roomId) => apiFetch(`/rooms/${roomId}`),
   leaveRoom: (roomId) => apiFetch(`/rooms/${roomId}/leave`, { method: "POST" }),
   deleteRoom: (roomId) => apiFetch(`/rooms/${roomId}`, { method: "DELETE" }),
+  listTasks: (roomId) => apiFetch(`/rooms/${roomId}/tasks`),
+  createTask: (roomId, title, description) => apiFetch(`/rooms/${roomId}/tasks`, {
+    method: "POST",
+    body: JSON.stringify({ title, description }),
+  }),
+  updateTask: (roomId, taskId, changes) => apiFetch(`/rooms/${roomId}/tasks/${taskId}`, {
+    method: "PATCH",
+    body: JSON.stringify(changes),
+  }),
+  deleteTask: (roomId, taskId) => apiFetch(`/rooms/${roomId}/tasks/${taskId}`, { method: "DELETE" }),
 }
 
 export function saveToken(token) {

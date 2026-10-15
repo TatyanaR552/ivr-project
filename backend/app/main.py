@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .database import Base, engine
-from .routers import auth_router, rooms
+from .routers import auth_router, rooms, ws, kanban
 
 Base.metadata.create_all(bind=engine)
 
@@ -18,6 +18,8 @@ app.add_middleware(
 
 app.include_router(auth_router.router)
 app.include_router(rooms.router)
+app.include_router(ws.router)
+app.include_router(kanban.router)
 
 
 @app.get("/")

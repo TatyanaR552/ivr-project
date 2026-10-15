@@ -393,6 +393,325 @@ button.room-card:hover {
   color: #ffaaa2;
 }
 
+.timer-card {
+  display: flex;
+  flex-direction: column;
+  max-width: 560px;
+  margin: 30px auto;
+  text-align: center;
+}
+
+.timer-time {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  min-height: 160px;
+  font-size: clamp(48px, 10vw, 72px);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin: 24px 0;
+}
+
+.timer-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 56px;
+  align-content: start;
+  min-height: 122px;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.timer-controls button {
+  font-size: 14px;
+  line-height: 1.25;
+  padding: 10px 12px;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.chat-card {
+  max-width: 560px;
+  margin: 30px auto;
+}
+
+.chat-messages {
+  height: 320px;
+  overflow-y: auto;
+  padding: 12px;
+  margin-bottom: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow-anchor: none;
+}
+
+.chat-message {
+  width: fit-content;
+  max-width: 90%;
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  background: var(--background);
+  overflow-wrap: anywhere;
+}
+
+.chat-message-own {
+  margin-left: auto;
+  background: var(--soft);
+}
+
+.chat-message-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.chat-message time {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.chat-message p {
+  margin-bottom: 0;
+  white-space: pre-wrap;
+}
+
+.chat-form {
+  display: grid;
+  gap: 10px;
+}
+
+.chat-form textarea {
+  width: 100%;
+  font: inherit;
+  line-height: 1.5;
+  min-height: 74px;
+  max-height: 200px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  background: var(--surface);
+  resize: none;
+  overflow-y: auto;
+}
+
+.chat-form textarea:focus-visible {
+  outline: 3px solid #87bcb1;
+  outline-offset: 2px;
+}
+
+.chat-form button {
+  justify-self: end;
+}
+
+.room-workspace {
+  width: min(1180px, calc(100% - 32px));
+}
+
+.room-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.room-summary h1 {
+  margin: 12px 0 20px;
+  overflow-wrap: anywhere;
+}
+
+.room-summary-main,
+.room-summary-invite {
+  min-width: 0;
+}
+
+.room-summary .room-action {
+  padding-top: 16px;
+}
+
+.room-summary .room-action p {
+  font-size: 14px;
+}
+
+.room-summary .invite-code {
+  margin: 16px 0 0;
+}
+
+.room-tools {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.5fr);
+  align-items: stretch;
+  gap: 24px;
+}
+
+.room-tools > .card {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+}
+
+@media (max-width: 800px) {
+  .room-summary,
+  .room-tools {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .room-summary,
+  .room-tools {
+    gap: 18px;
+  }
+
+  .room-tools > .card,
+  .room-summary {
+    padding: 20px;
+  }
+
+  .chat-messages {
+    height: 280px;
+  }
+}
+
+.kanban-board {
+  margin-top: 24px;
+}
+
+.task-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  align-items: start;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.task-form > p,
+.task-form-actions {
+  grid-column: 1 / -1;
+}
+
+.task-form textarea {
+  width: 100%;
+  min-height: 74px;
+  max-height: 200px;
+  font: inherit;
+  line-height: 1.5;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  background: var(--surface);
+  resize: none;
+  overflow-y: auto;
+}
+
+.task-form textarea:focus-visible {
+  outline: 3px solid #87bcb1;
+  outline-offset: 2px;
+}
+
+.task-form-actions,
+.task-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.kanban-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.kanban-column {
+  min-width: 0;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--background);
+}
+
+.kanban-column-drop {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.task-card[draggable="true"] {
+  cursor: grab;
+}
+
+.task-card-dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.kanban-column h3 {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 16px;
+  font-size: 17px;
+}
+
+.task-count {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.task-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+
+.task-card h4 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  white-space: pre-wrap;
+}
+
+.task-card p {
+  white-space: pre-wrap;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.task-actions button {
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.task-edit-actions {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  margin-top: 12px;
+}
+
+.board-load-error {
+  margin-bottom: 18px;
+}
+
+@media (max-width: 800px) {
+  .kanban-columns,
+  .task-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .kanban-board {
+    padding: 20px;
+  }
+}
+
 @media (max-width: 620px) {
   .auth-page {
     grid-template-columns: minmax(0, 420px);
