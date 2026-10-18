@@ -16,17 +16,26 @@ def message_data(message):
     }
 
 
-def get_history(room_id):
+def get_history(room_id, before=None):
     with SessionLocal() as db:
-        messages = (
+        query = (
             db.query(models.Message)
             .options(joinedload(models.Message.author))
             .filter(models.Message.room_id == room_id)
-            .order_by(models.Message.created_at.desc(), models.Message.id.desc())
-            .limit(100)
-            .all()
         )
-        return [message_data(message) for message in reversed(messages)]
+        if before is not None:
+            cursor = db.query(models.Message).filter_by(id=before, room_id=room_id).first()
+            if cursor is None:
+                return None
+            query = query.filter(
+                (models.Message.created_at < cursor.created_at)
+                | ((models.Message.created_at == cursor.created_at) & (models.Message.id < cursor.id))
+            )
+        messages = query.order_by(models.Message.created_at.desc(), models.Message.id.desc()).limit(101).all()
+        return {
+            "messages": [message_data(message) for message in reversed(messages[:100])],
+            "has_more": len(messages) > 100,
+        }
 
 
 def save_message(room_id, token, command):

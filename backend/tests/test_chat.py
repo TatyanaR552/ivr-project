@@ -54,7 +54,7 @@ def test_chat_history_survives_reconnect_and_does_not_cross_rooms(client):
     with client.websocket_connect(f"/ws/rooms/{room_id}") as socket:
         connect(socket, token)
         socket.send_json({"type": "chat_history"})
-        assert socket.receive_json() == {"type": "chat_history", "messages": [saved]}
+        assert socket.receive_json() == {"type": "chat_history", "messages": [saved], "has_more": False}
     other = client.post("/rooms", json={"name": "Другая"}, headers={"Authorization": f"Bearer {token}"}).json()
     with client.websocket_connect(f"/ws/rooms/{other['id']}") as socket:
         connect(socket, token)
@@ -100,6 +100,7 @@ def test_member_who_left_cannot_receive_new_messages(client):
         with client.websocket_connect(url) as member:
             connect(member, member_token)
             client.post(f"/rooms/{room_id}/leave", headers={"Authorization": f"Bearer {member_token}"})
+            assert owner.receive_json() == {"type": "members_changed"}
             owner.send_json(chat_command())
             assert owner.receive_json()["type"] == "chat_message"
             owner.receive_json()

@@ -15,10 +15,14 @@ export default function KanbanBoard({ roomId, taskVersion, connected }) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [editingId, setEditingId] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
   const [error, setError] = useState("")
   const [loadError, setLoadError] = useState("")
   const [loaded, setLoaded] = useState(false)
-  const [pending, setPending] = useState(false)
+  const [pendingIds, setPendingIds] = useState([])
+  const pendingTasks = useRef(new Set())
+  const editingIdRef = useRef(null)
+  editingIdRef.current = editingId
   const [formPending, setFormPending] = useState(false)
   const [refresh, setRefresh] = useState(0)
   const titleRef = useRef(null)
@@ -53,14 +57,18 @@ export default function KanbanBoard({ roomId, taskVersion, connected }) {
 
   async function handleSubmit(event) {
     event.preventDefault()
-    if (formPending) return
+    if (formPending || pendingTasks.current.has(editingId)) return
     if (!connected || !loaded) {
       setError("Дождитесь подключения и загрузки доски.")
       return
     }
     const cleanTitle = title.trim()
-    if (!cleanTitle || cleanTitle.length > 120) {
-      setError("Введите название задачи от 1 до 120 символов.")
+    if (!cleanTitle) {
+      setError("Введите задачу")
+      return
+    }
+    if (cleanTitle.length > 120) {
+      setError("Название задачи слишком длинное")
       return
     }
     if (description.trim().length > 1000) {
@@ -85,6 +93,7 @@ export default function KanbanBoard({ roomId, taskVersion, connected }) {
   }
 
   function editTask(task) {
+    if (formPending || isTaskDisabled(task.id)) return
     setEditingId(task.id)
     setTitle(task.title)
     setDescription(task.description)
@@ -93,8 +102,7 @@ export default function KanbanBoard({ roomId, taskVersion, connected }) {
   }
 
   async function moveTask(task, status) {
-    if (pending || formPending || !connected) return
-    setPending(true)
+    if (!beginTask(task.id)) return
     setError("")
     try {
       await api.updateTask(roomId, task.id, { status })
@@ -102,34 +110,49 @@ export default function KanbanBoard({ roomId, taskVersion, connected }) {
     } catch (requestError) {
       setError(requestError.message)
     } finally {
-      setPending(false)
+      finishTask(task.id)
     }
   }
 
   async function deleteTask(task) {
-    if (pending || formPending || !connected || !window.confirm(`Удалить задачу "${task.title}"?`)) return
-    setPending(true)
+    if (deletingId !== task.id || !beginTask(task.id)) return
     setError("")
     try {
       await api.deleteTask(roomId, task.id)
-      if (editingId === task.id) clearForm()
+      if (editingIdRef.current === task.id) clearForm()
+      setDeletingId((current) => current === task.id ? null : current)
       setRefresh((value) => value + 1)
     } catch (requestError) {
       setError(requestError.message)
     } finally {
-      setPending(false)
+      finishTask(task.id)
     }
   }
 
-  const disabled = pending || formPending || !connected || !loaded
-  const formDisabled = formPending || !connected || !loaded
+  function isTaskDisabled(taskId) {
+    return !connected || !loaded || pendingIds.includes(taskId) || (formPending && editingId === taskId)
+  }
+
+  function beginTask(taskId) {
+    if (isTaskDisabled(taskId) || pendingTasks.current.has(taskId)) return false
+    pendingTasks.current.add(taskId)
+    setPendingIds([...pendingTasks.current])
+    return true
+  }
+
+  function finishTask(taskId) {
+    pendingTasks.current.delete(taskId)
+    setPendingIds([...pendingTasks.current])
+  }
+
+  const formDisabled = formPending || !connected || !loaded || pendingIds.includes(editingId)
 
   function dropTask(event, status) {
     event.preventDefault()
     const task = tasks.find((item) => item.id === draggedId)
     setDraggedId(null)
     setDropStatus(null)
-    if (!disabled && task && task.status !== status) moveTask(task, status)
+    if (task && !isTaskDisabled(task.id) && task.status !== status) moveTask(task, status)
   }
 
   return (
@@ -139,18 +162,18 @@ export default function KanbanBoard({ roomId, taskVersion, connected }) {
         {editingId && <p className="muted">Редактирование задачи</p>}
         <label>Название<textarea ref={titleRef} value={title} rows={2} maxLength={120} disabled={formPending} onChange={(event) => { setTitle(event.target.value); setError("") }} /></label>
         <label>Описание<textarea ref={descriptionRef} value={description} rows={2} maxLength={1000} disabled={formPending} onChange={(event) => { setDescription(event.target.value); setError("") }} /></label>
+        <p className="error form-error-slot" aria-live="polite">{error}</p>
         <div className="task-form-actions">
           <button type="submit" disabled={formDisabled}>{editingId ? "Сохранить" : "Добавить задачу"}</button>
           {editingId && <button type="button" className="secondary" disabled={formPending} onClick={clearForm}>Отмена</button>}
         </div>
       </form>
-      {error && <p className="error" role="alert">{error}</p>}
       {loadError && <div className="board-load-error"><p className="error" role="alert">Не удалось обновить доску. {loadError}</p><button className="secondary" onClick={() => setRefresh((value) => value + 1)}>Повторить</button></div>}
       {!loaded && !loadError && <p className="muted">Загружаем задачи...</p>}
       <div className="kanban-columns">
         {COLUMNS.map((column) => (
           <section className={`kanban-column${dropStatus === column.status ? " kanban-column-drop" : ""}`} key={column.status} onDragOver={(event) => {
-            if (disabled || !draggedId) return
+            if (!draggedId || isTaskDisabled(draggedId)) return
             event.preventDefault()
             event.dataTransfer.dropEffect = "move"
             setDropStatus(column.status)
@@ -160,8 +183,8 @@ export default function KanbanBoard({ roomId, taskVersion, connected }) {
             <h3>{column.title} <span className="task-count">{tasks.filter((task) => task.status === column.status).length}</span></h3>
             {loaded && !tasks.some((task) => task.status === column.status) && <p className="muted">Нет задач</p>}
             {tasks.filter((task) => task.status === column.status).map((task) => (
-              <article className={`task-card${draggedId === task.id ? " task-card-dragging" : ""}`} key={task.id} draggable={!disabled} onDragStart={(event) => {
-                if (disabled || event.target.closest("button")) {
+              <article className={`task-card${draggedId === task.id ? " task-card-dragging" : ""}`} key={task.id} draggable={!isTaskDisabled(task.id) && deletingId !== task.id} onDragStart={(event) => {
+                if (isTaskDisabled(task.id) || event.target.closest("button")) {
                   event.preventDefault()
                   return
                 }
@@ -173,13 +196,21 @@ export default function KanbanBoard({ roomId, taskVersion, connected }) {
                 {task.description && <p>{task.description}</p>}
                 <div className="task-actions">
                   {COLUMNS.filter((target) => target.status !== task.status).map((target) => (
-                    <button key={target.status} className="secondary" disabled={disabled} aria-label={`Переместить задачу "${task.title}" в "${target.title}"`} onClick={() => moveTask(task, target.status)}>{target.title}</button>
+                    <button key={target.status} className="secondary" disabled={isTaskDisabled(task.id) || deletingId === task.id} aria-label={`Переместить задачу "${task.title}" в "${target.title}"`} onClick={() => moveTask(task, target.status)}>{target.title}</button>
                   ))}
                 </div>
-                <div className="task-actions task-edit-actions">
-                  <button className="secondary" disabled={disabled} onClick={() => editTask(task)}>Изменить</button>
-                  <button className="secondary" disabled={disabled} onClick={() => deleteTask(task)}>Удалить</button>
-                </div>
+                {deletingId === task.id ? <div className="task-delete-confirm task-edit-actions" role="group" aria-label="Подтверждение удаления задачи" onKeyDown={(event) => {
+                  if (event.key === "Escape" && !pendingIds.includes(task.id)) setDeletingId(null)
+                }}>
+                  <p>Удалить задачу?</p>
+                  <div className="task-actions">
+                    <button className="danger" disabled={isTaskDisabled(task.id)} onClick={() => deleteTask(task)}>Удалить</button>
+                    <button className="secondary" disabled={pendingIds.includes(task.id)} autoFocus onClick={() => setDeletingId(null)}>Отмена</button>
+                  </div>
+                </div> : <div className="task-actions task-edit-actions">
+                  <button className="secondary" disabled={formPending || isTaskDisabled(task.id)} onClick={() => editTask(task)}>Изменить</button>
+                  <button className="secondary" disabled={isTaskDisabled(task.id)} onClick={() => setDeletingId(task.id)}>Удалить</button>
+                </div>}
               </article>
             ))}
           </section>

@@ -64,6 +64,27 @@ class RoomOut(BaseModel):
     owner_id: str
 
 
+class RoomMemberOut(BaseModel):
+    id: str
+    username: str
+    is_owner: bool
+
+
+class ChatMessageOut(BaseModel):
+    type: Literal["chat_message"]
+    id: str
+    client_id: str
+    author_id: str
+    author_username: str
+    text: str
+    created_at: str
+
+
+class ChatHistoryOut(BaseModel):
+    messages: list[ChatMessageOut]
+    has_more: bool
+
+
 class TaskCreate(BaseModel):
     title: str = Field(strict=True, min_length=1, max_length=120)
     description: str = Field(default="", strict=True, max_length=1000)

@@ -1,7 +1,10 @@
 const API_BASE = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000"
 
+// Старый общий токен не переносим: каждая вкладка начинает свою сессию.
+localStorage.removeItem("token")
+
 export function getToken() {
-  return localStorage.getItem("token")
+  return sessionStorage.getItem("token")
 }
 
 export function getRoomSocketUrl(roomId) {
@@ -34,7 +37,7 @@ async function apiFetch(path, options = {}) {
     }
   }
   if (!response.ok) {
-    if (response.status === 401 && token && getToken()) {
+    if (response.status === 401 && token && getToken() === token) {
       clearToken()
       window.location.replace("/login?session=expired")
     }
@@ -70,6 +73,8 @@ export const api = {
     body: JSON.stringify({ invite_code: inviteCode }),
   }),
   getRoom: (roomId) => apiFetch(`/rooms/${roomId}`),
+  roomMembers: (roomId) => apiFetch(`/rooms/${roomId}/members`),
+  olderMessages: (roomId, before) => apiFetch(`/rooms/${roomId}/messages?before=${encodeURIComponent(before)}`),
   leaveRoom: (roomId) => apiFetch(`/rooms/${roomId}/leave`, { method: "POST" }),
   deleteRoom: (roomId) => apiFetch(`/rooms/${roomId}`, { method: "DELETE" }),
   listTasks: (roomId) => apiFetch(`/rooms/${roomId}/tasks`),
@@ -85,11 +90,11 @@ export const api = {
 }
 
 export function saveToken(token) {
-  localStorage.setItem("token", token)
+  sessionStorage.setItem("token", token)
 }
 
 export function clearToken() {
-  localStorage.removeItem("token")
+  sessionStorage.removeItem("token")
 }
 
 export function isAuthenticated() {

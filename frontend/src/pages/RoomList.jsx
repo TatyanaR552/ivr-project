@@ -17,12 +17,38 @@ export default function RoomList() {
   const [joinError, setJoinError] = useState("")
   const navigate = useNavigate()
 
-  function loadRooms() {
-    api.myRooms().then(setRooms).catch((requestError) => setError(requestError.message))
-    api.publicRooms().then(setPublicRooms).catch((requestError) => setError(requestError.message))
-  }
+  useEffect(() => {
+    let disposed = false
+    let loading = false
 
-  useEffect(loadRooms, [])
+    async function loadRooms() {
+      if (loading || document.hidden) return
+      loading = true
+      try {
+        const [myRooms, availableRooms] = await Promise.all([api.myRooms(), api.publicRooms()])
+        if (disposed) return
+        setRooms(myRooms)
+        setPublicRooms(availableRooms)
+        setError("")
+      } catch (requestError) {
+        if (!disposed) setError(requestError.message)
+      } finally {
+        loading = false
+      }
+    }
+
+    // Список обновляем отдельно от соединения внутри конкретной комнаты.
+    loadRooms()
+    const interval = setInterval(loadRooms, 3000)
+    window.addEventListener("focus", loadRooms)
+    document.addEventListener("visibilitychange", loadRooms)
+    return () => {
+      disposed = true
+      clearInterval(interval)
+      window.removeEventListener("focus", loadRooms)
+      document.removeEventListener("visibilitychange", loadRooms)
+    }
+  }, [])
 
   async function createRoom(event) {
     event.preventDefault()
@@ -84,26 +110,25 @@ export default function RoomList() {
 
       <header className="hero">
         <h1>Учебные комнаты</h1>
-        <p>Создайте учебную комнату или присоединитесь к существующей.</p>
+        <p>Создайте учебную комнату или присоединитесь к существующей</p>
       </header>
       {error && <p className="error">{error}</p>}
 
       <section className="two-columns">
         <form className="card form-card" onSubmit={createRoom} noValidate>
           <h2>Создать комнату</h2>
-          <p className="muted">Введите название. Код приглашения появится после создания комнаты.</p>
           <label>Название<input value={name} onChange={(event) => { setName(event.target.value); setCreateError("") }} maxLength={80} aria-invalid={Boolean(createError)} aria-describedby={createError ? "create-room-error" : undefined} /></label>
-          {createError && <p id="create-room-error" className="field-error">{createError}</p>}
           <label className="checkbox"><input type="checkbox" checked={isPublic} onChange={(event) => setIsPublic(event.target.checked)} />Публичная комната</label>
           <p className="field-help">Публичную комнату увидят другие пользователи. Закрытую можно найти только по коду.</p>
+          <p id="create-room-error" className="error form-error-slot" aria-live="polite">{createError}</p>
           <button type="submit">Создать</button>
         </form>
 
         <form className="card form-card" onSubmit={joinByCode}>
           <h2>Войти по коду</h2>
-          <p className="muted">Введите код, который вам прислал создатель комнаты.</p>
           <label>Код приглашения<input value={inviteCode} onChange={(event) => { setInviteCode(event.target.value); setJoinError("") }} maxLength={8} aria-invalid={Boolean(joinError)} aria-describedby="invite-code-help" /></label>
-          <p id="invite-code-help" className={joinError ? "field-error" : "field-help"}>{joinError || "Код состоит из 8 символов."}</p>
+          <p id="invite-code-help" className="field-help">Код состоит из 8 символов</p>
+          <p className="error form-error-slot" aria-live="polite">{joinError}</p>
           <button type="submit">Присоединиться</button>
         </form>
       </section>
@@ -112,11 +137,11 @@ export default function RoomList() {
         <div className="section-heading"><h2>Мои комнаты</h2><span>{rooms.length}</span></div>
         <div className="room-grid">
           {rooms.map((room) => <button className="card room-card" key={room.id} onClick={() => navigate(`/rooms/${room.id}`)}><span className="room-type">{room.is_public ? "Публичная" : "Закрытая"}</span><strong>{room.name}</strong><span>Код: {room.invite_code}</span><span className="room-link">Открыть комнату</span></button>)}
-          {rooms.length === 0 && <div className="card empty-state"><strong>У вас пока нет комнат</strong><p>Создайте свою комнату или присоединитесь по коду.</p></div>}
+          {rooms.length === 0 && <div className="card empty-state"><strong>У вас пока нет комнат</strong><p>Создайте свою комнату или присоединитесь по коду</p></div>}
         </div>
       </section>
 
-      {publicRooms.length > 0 && <section><h2>Публичные комнаты</h2><p className="muted">Выберите комнату, чтобы присоединиться.</p><div className="room-grid">{publicRooms.map((room) => <div className="card room-card" key={room.id}><span className="room-type">Публичная</span><strong>{room.name}</strong><button onClick={() => joinPublicRoom(room)}>Присоединиться</button></div>)}</div></section>}
+      {publicRooms.length > 0 && <section><h2>Публичные комнаты</h2><div className="room-grid">{publicRooms.map((room) => <div className="card room-card" key={room.id}><span className="room-type">Публичная</span><strong>{room.name}</strong><button onClick={() => joinPublicRoom(room)}>Присоединиться</button></div>)}</div></section>}
     </main>
   )
 }

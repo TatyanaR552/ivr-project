@@ -56,7 +56,9 @@ def check_access(token, room_id):
         if user is None:
             return 4401
         room = db.get(models.Room, room_id)
-        if room is None or user not in room.members:
+        if room is None:
+            return 4404
+        if user not in room.members:
             return 4403
     return None
 
@@ -135,7 +137,7 @@ async def room_websocket(websocket: WebSocket, room_id: str):
                         await websocket.close(code=error_code)
                         return
                     history = await asyncio.to_thread(get_history, room_id)
-                    await websocket.send_json({"type": "chat_history", "messages": history})
+                    await websocket.send_json({"type": "chat_history", **history})
             elif message.get("type") == "chat_message":
                 try:
                     command = schemas.ChatCommand.model_validate(message)

@@ -236,6 +236,16 @@ input[aria-invalid="true"] {
   font-size: 13px;
 }
 
+.form-error-slot {
+  line-height: 1.5;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.form-error-slot:empty {
+  display: none;
+}
+
 .notice {
   border-radius: 8px;
   padding: 10px;
@@ -464,6 +474,11 @@ button:disabled {
   background: var(--soft);
 }
 
+.chat-history-button {
+  display: block;
+  margin: 0 auto 16px;
+}
+
 .chat-message-heading {
   display: flex;
   flex-wrap: wrap;
@@ -543,6 +558,45 @@ button:disabled {
 
 .room-summary .invite-code {
   margin: 16px 0 0;
+}
+
+.room-members {
+  margin-bottom: 20px;
+}
+
+.room-members h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 17px;
+  margin-bottom: 10px;
+}
+
+.members-count,
+.member-owner {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.members-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.members-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  max-width: 100%;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--soft);
+  overflow-wrap: anywhere;
 }
 
 .room-tools {

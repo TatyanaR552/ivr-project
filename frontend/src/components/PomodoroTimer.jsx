@@ -24,7 +24,7 @@ export default function PomodoroTimer({ timer, connected, pending, send, error }
   return (
     <section className="card timer-card">
       <h2>Таймер Помодоро</h2>
-      <p className="muted">Работа - 25 минут, перерыв - 5 минут.</p>
+      <p className="muted">Работа - 25 минут, перерыв - 5 минут</p>
       <div className="timer-time" role="timer" aria-label="Оставшееся время">{minutes}:{seconds}</div>
       <div className="timer-controls">
         {!running && !paused && <>

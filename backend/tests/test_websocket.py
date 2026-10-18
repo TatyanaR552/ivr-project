@@ -56,10 +56,9 @@ def test_deleted_room_revokes_access(client):
         socket.receive_json()
         socket.receive_json()
         client.delete(f"/rooms/{room_id}", headers={"Authorization": f"Bearer {token}"})
-        socket.send_json({"type": "ping"})
         with pytest.raises(WebSocketDisconnect) as error:
             socket.receive_json()
-        assert error.value.code == 4403
+        assert error.value.code == 4404
 
 
 def test_malformed_json_closes_connection(client):

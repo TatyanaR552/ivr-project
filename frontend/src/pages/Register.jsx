@@ -10,10 +10,12 @@ export default function Register() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [errorField, setErrorField] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = useNavigate()
 
   async function handleSubmit(event) {
     event.preventDefault()
+    if (isSubmitting) return
     setError("")
     setErrorField("")
     const cleanEmail = email.trim()
@@ -38,6 +40,7 @@ export default function Register() {
       setErrorField("password")
       return
     }
+    setIsSubmitting(true)
     try {
       await api.register(cleanEmail, cleanUsername, password)
       const result = await api.login(cleanUsername, password)
@@ -45,24 +48,22 @@ export default function Register() {
       navigate("/")
     } catch (requestError) {
       setError(requestError.message)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   return (
     <main className="centered-page auth-page">
-      <div className="auth-intro"><p className="eyebrow">Co-Study</p><h1>Учебные комнаты</h1><p>Зарегистрируйтесь, чтобы создать свою комнату или присоединиться к существующей.</p><ThemeToggle /></div>
+      <div className="auth-intro"><h1>CO-STUDY</h1><p>Платформа для совместной учёбы</p><ThemeToggle /></div>
       <form className="card form-card" onSubmit={handleSubmit} noValidate>
         <p className="brand">Co-Study</p>
         <h1>Регистрация</h1>
-        <p className="muted">Придумайте имя пользователя и пароль.</p>
         <label>Email<input type="email" value={email} onChange={(event) => { setEmail(event.target.value); setError(""); setErrorField("") }} aria-invalid={errorField === "email"} /></label>
-        {error && errorField === "email" && <p className="field-error">{error}</p>}
         <label>Имя пользователя<input value={username} onChange={(event) => { setUsername(event.target.value); setError(""); setErrorField("") }} maxLength={30} aria-invalid={errorField === "username"} /></label>
-        {error && errorField === "username" && <p className="field-error">{error}</p>}
         <label>Пароль<input type="password" value={password} onChange={(event) => { setPassword(event.target.value); setError(""); setErrorField("") }} maxLength={72} aria-invalid={errorField === "password"} /></label>
-        {error && errorField === "password" && <p className="field-error">{error}</p>}
-        {error && !errorField && <p className="field-error">{error}</p>}
-        <button type="submit">Зарегистрироваться</button>
+        <p className="error form-error-slot" aria-live="polite">{error}</p>
+        <button type="submit" disabled={isSubmitting}>Зарегистрироваться</button>
         <p>Уже есть аккаунт? <Link to="/login">Войти</Link></p>
       </form>
     </main>
